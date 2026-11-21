@@ -699,6 +699,9 @@ def generate_chat_reply(message: str, intent: str = None, chat_history: list = N
 
     if intent == "thanks":
         return "You're welcome!\nFeel free to ask if you need anything else."
+    if intent == "other":
+        return (
+            "Sorry, I can only assist with enquiries related to our services. It looks like your question may be outside my scope.  I can help you explore our services, discuss your requirements, or raise a new enquiry.")
 
     if intent == "pricing":
         if not GROQ_API_KEY:
@@ -720,6 +723,7 @@ def generate_chat_reply(message: str, intent: str = None, chat_history: list = N
         except Exception as e:
             print("[AI Service] Pricing reply generation failed:", e)
             return PRICING_TEXT
+    
 
     if not GROQ_API_KEY:
         if intent in ("faq", "services_info"):

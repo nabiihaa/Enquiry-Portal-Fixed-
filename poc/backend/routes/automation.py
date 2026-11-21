@@ -55,8 +55,11 @@ def save_enquiry_from_email(mail, ai_result, thread_key=None, draft_response="")
 def sync_emails():
     """Sync unread emails and auto-reply ONLY to new threads"""
     data = request.get_json(silent=True) or {}
-    limit = int(data.get("limit", 10))
-    mark_seen = bool(data.get("mark_seen", False))
+    try:
+        limit = max(1, min(int(data.get("limit", 10)), 50))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Email limit must be a number between 1 and 50."}), 400
+    mark_seen = data.get("mark_seen", False) is True
     
     try:
         emails = fetch_unread_emails(limit=limit, mark_seen=mark_seen)

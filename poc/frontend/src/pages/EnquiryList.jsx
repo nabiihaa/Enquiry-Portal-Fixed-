@@ -80,7 +80,7 @@ export default function EnquiryList() {
                 <th>Source</th>
                 <th>Category</th>
                 <th>Priority</th>
-                <th>🤖 AI Summary</th>
+                <th> AI Summary</th>
                 <th>Status</th>
                 <th>Follow-up</th>
                 <th>Created</th>

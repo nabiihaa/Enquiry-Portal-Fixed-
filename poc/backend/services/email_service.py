@@ -85,14 +85,26 @@ def fetch_unread_emails(limit=10, mark_seen=False):
     mailbox = imaplib.IMAP4_SSL(host)
     try:
         mailbox.login(username, password)
-        mailbox.select(folder)
-        _, data = mailbox.search(None, "UNSEEN")
-        ids = data[0].split()[-limit:]
+        status, _ = mailbox.select(folder)
+        if status != "OK":
+            raise RuntimeError(f"Could not open mailbox folder: {folder}")
+        status, data = mailbox.search(None, "UNSEEN")
+        if status != "OK" or not data or not data[0]:
+            if status != "OK":
+                raise RuntimeError("Could not search the mailbox for unread messages")
+            return []
+        ids = data[0].split()[-max(1, min(int(limit), 50)):]
         emails = []
 
         for msg_id in ids:
-            _, msg_data = mailbox.fetch(msg_id, "(RFC822)")
-            raw = msg_data[0][1]
+            # BODY.PEEK avoids IMAP's implicit Seen flag.  Messages are marked
+            # read explicitly below only when the caller requested it.
+            status, msg_data = mailbox.fetch(msg_id, "(BODY.PEEK[])")
+            if status != "OK":
+                continue
+            raw = next((part[1] for part in msg_data if isinstance(part, tuple)), None)
+            if raw is None:
+                continue
             message = email.message_from_bytes(raw)
             sender_name, sender_email = parseaddr(_decode(message.get("From")))
             body = _message_body(message)
@@ -105,8 +117,8 @@ def fetch_unread_emails(limit=10, mark_seen=False):
                 "sender_email": sender_email,
                 "body": body,
             })
-            if not mark_seen:
-                mailbox.store(msg_id, "-FLAGS", "\\Seen")
+            if mark_seen:
+                mailbox.store(msg_id, "+FLAGS", "\\Seen")
 
         return emails
     finally:
